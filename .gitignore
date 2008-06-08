@@ -2,5 +2,6 @@
 *.swa
 *.swf
 *.swc
-bin-debug
+*.psd
+bin-debug/*
 
