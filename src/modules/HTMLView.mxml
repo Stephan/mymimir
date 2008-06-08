@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MYMViewModule xmlns="org.mymimir.sdk.Views.*" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+	name="org.modules.HTMLView">
+	
+
+	<mx:Script>
+		<![CDATA[
+			import mx.effects.easing.Back;
+			import org.mymimir.sdk.IViewFunctionHandler;
+			import org.mymimir.sdk.WikiPageEvent;
+			import org.mymimir.sdk.ConverterFactory;
+			import org.mymimir.sdk.IConverter;
+			import org.mymimir.sdk.IApplication;
+			import org.mymimir.sdk.IWikiPage;
+			import org.mymimir.sdk.Protocols;
+			import org.mymimir.sdk.Tools;
+			import org.mymimir.sdk.URLHandler;
+			
+			private var _page:IWikiPage;
+			private var _location:String;
+			private var _converter:IConverter
+			
+			
+			override public function init(app:IApplication, description:XML):void
+			{
+				this._title = "HTML";
+				super.init(app, description);
+				this._protocols = new Array(Protocols.HTTPProtocol, Protocols.WikiPageProtocol, Protocols.SearchProtocol);
+				this._converter = ConverterFactory.getConverter("HTML");
+			}
+			
+			private function onHTMLViewComplete():void
+			{
+				this._htmlView.htmlLoader.textEncodingFallback = "UTF-8";
+				
+				var loc:String;
+				if (!this._htmlView.location)
+					loc = this._location;
+				else loc = this._htmlView.location;
+				
+				this._location = loc;
+					
+				this._htmlView.addEventListener(Event.LOCATION_CHANGE, onLocationChange);
+				this._htmlView.addEventListener(Event.COMPLETE, onHTMLComplete);
+			}
+			
+			private function callPSYFunction(name:String, ... args):Object
+			{
+				var handler:IViewFunctionHandler = this._app.getViewFunctionHandler(name);
+				if (handler)
+				{
+					return handler.processViewFunction(name, args);
+				}
+				
+				else return null;
+			}
+					
+			
+			private function onHTMLComplete(ev:Event):void
+			{
+				_htmlView.htmlLoader.window.callPSYFunction = this.callPSYFunction;
+/* 				this._htmlView.htmlLoader.scrollH = scrH;
+				this._htmlView.htmlLoader.scrollV = scrV;	
+				trace("Function set");				
+ */			}
+			
+			private function onLocationChange(ev:Event):void
+			{
+				this._location = this._htmlView.location;	
+				this.dispatchEvent(new DataEvent(org.mymimir.sdk.Events.VIEW_LOCATION_CHANGE, false, false, this._htmlView.location));
+			}
+			
+				private var scrH:Number;
+				private var scrV:Number;		
+			private function onPageChanged(ev:WikiPageEvent):void
+			{
+				scrH = this._htmlView.htmlLoader.scrollH;
+				scrV = this._htmlView.htmlLoader.scrollV;
+				
+				this._htmlView.htmlText = this._converter.convertText(this._page.text);
+				
+			}
+			
+						
+			override public function handleLocation(location:String):Boolean
+			{
+				
+				var saveScrRect:Rectangle;
+				
+				if (URLHandler.isWikiLocation(location))
+				{
+					if (this._page == this._app.getPageByURL(location))
+						saveScrRect = this._htmlView.scrollRect;
+
+					this._page = this._app.getPageByURL(location);
+					this._page.addEventListener(org.mymimir.sdk.Events.WIKIPAGE_CHANGED, onPageChanged);
+					var text:String = this._converter.convertText(this._page.text);
+					this._htmlView.htmlText = this._converter.convertText(this._page.text);
+					
+					if (saveScrRect) this._htmlView.scrollRect = saveScrRect;
+					
+					this.dispatchEvent(new Event(org.mymimir.sdk.Events.VIEW_DEMAND_DISPLAY));
+					return true;
+				}
+				else if (URLHandler.isWebLocation(location)) 
+				{
+					if (location != this._location) this._htmlView.location = location;
+					this.dispatchEvent(new Event(org.mymimir.sdk.Events.VIEW_DEMAND_DISPLAY));
+					return true;
+				}
+				else if (URLHandler.isSearchLocation(location))
+				{
+					var query:String = location.substring(Protocols.SearchProtocol.length, location.length);
+					this._app.searchWiki(query, this.cbSearchResultsGot, query);
+					return true;
+				}
+				return false; 
+			}
+			
+			private function cbSearchResultsGot(success:Boolean, results:Array, query:String, ... args):void
+			{
+				var resTxt:String = this.createSearchResult(query, results);
+					
+				this._htmlView.htmlText = this._converter.processFunctions(this._converter.prefix) + 
+										  resTxt + 
+										  this._converter.processFunctions(this._converter.suffix);
+											  
+				this.dispatchEvent(new Event(org.mymimir.sdk.Events.VIEW_DEMAND_DISPLAY));				
+			}
+			
+			
+			
+			/*** Display search results
+			***************************************************************************************/
+			
+			private function createResultDescription(query:String, words:String):String
+			{
+				var ret:String = words;
+				query = Tools.stripWhiteSpace(query);
+				var qWords:Array = query.split(" ");
+				var regCaptures:RegExp = /([^\#]*)\#([^\#]+)\#([^\#]*)/g
+				
+				for each (var word:String in qWords)
+				{
+					var reg:RegExp = new RegExp("((?:[^\\s]+\\s){0,4})(\\w*" + Tools.stripWhiteSpace(word) + "\\w*)((?:\\s[^\\s]+){0,4})", "gi");
+									
+					ret = ret.replace(reg, "#$1<strong>$2</strong>$3#");
+				}
+				ret = ret.replace(regCaptures, " ... $2");
+				
+				return ret + "...";
+			}
+			
+			private function createSearchResult(query:String, results:Array):String
+			{
+				var ret:String;
+				var resCount:String;
+				
+				if (!results)
+					resCount = "no hits";
+				else if (results.length == 1)
+					resCount = "1 hit";
+				else
+					resCount = results.length.toString() + " hits";
+					
+				
+				ret = "<h1 class=\"searchResult\">Search results</h1><h2>Your search for \"" 
+				    + query + "\" resulted in " + resCount + "</h2>"
+				
+				if (results)
+				{
+					ret += "<dl class=\"searchRes\">";
+					for each (var res:Object in results)
+					{
+						ret += "<dt><a class=\"wiki\" href=\"" + Protocols.WikiPageProtocol + res.page + "\">";
+						ret += res.page + "</a></dt>";
+						
+						ret += "<dd>" + createResultDescription(query, res.words) + "</dd>";
+					}
+					
+					ret += "</dl>";
+				}
+								
+				return ret;
+			}
+			
+
+			private function onHTMLKeyDown(ev:KeyboardEvent):void
+			{
+				switch (ev.keyCode)
+				{
+					case Keyboard.F5: this._htmlView.stylesInitialized();
+									  break;
+					
+				}
+			}
+			
+		]]>
+	</mx:Script>
+
+	
+	
+	
+	
+	<mx:HTML id="_htmlView" width="100%" height="100%" creationComplete="onHTMLViewComplete()" keyDown="onHTMLKeyDown(event)" />
+
+	
+</MYMViewModule>

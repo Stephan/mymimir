@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MYMViewModule xmlns="org.mymimir.sdk.Views.*" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+	name="org.modules.SimplePageList">
+	
+	<mx:Script>
+		<![CDATA[
+			import org.mymimir.sdk.Events;
+			import org.mymimir.sdk.IWiki;
+			
+			
+			
+			private var _pageList:XML;
+			
+			
+			private function onTreeComplete():void
+			{
+				setTreeProvider();
+			}
+			
+			
+			override public function set wiki(wiki:IWiki):void
+			{
+				super.wiki = wiki;
+				setTreeProvider();
+				this._wiki.addEventListener(org.mymimir.sdk.Events.WIKI_CHANGED, onWikiChanged);
+				this.updatePageList();
+			}
+			
+			
+			private function onWikiChanged(ev:Event):void
+			{
+				this.updatePageList();
+			}
+			
+			
+			private function setTreeProvider():void
+			{
+				if ((this._tree) && (this._wiki))
+				{
+					this._tree.dataProvider = this._pageList.node;	
+				}
+			}
+			
+			
+					
+			/**
+			 * Create a new node for a page. 
+			 * @param page	The page.
+			 * @return 		Node as an XML &lt;node label="..." expanded="0" /&gt;
+			 * 
+			 */		
+			private function createNodeForPage(page:String):XML
+			{
+				var node:XML = new XML("<node />");
+				node.@label = page;
+				node.@expanded = "0";
+				node.@root = "0";
+				
+				return node;
+			}
+			
+			
+			private function cbUpdatePageListPagesGot(success:Boolean, pages:Array, ... args):void
+			{
+				this._pageList = <pages/>;
+				
+				for each (var page:String in pages)
+				{
+					var node:XML = this.createNodeForPage(page);
+					this._pageList.appendChild(node);
+				}		
+			}
+	
+			private function updatePageList():void
+			{
+				this._wiki.backend.getPages(this.cbUpdatePageListPagesGot);
+			}
+
+		
+			
+			
+		]]>
+	</mx:Script>
+	
+	<mx:VBox width="100%" height="100%">
+	<mx:Tree width="100%" height="100%" id="_tree" creationComplete="onTreeComplete()" labelField="@label"></mx:Tree>
+	</mx:VBox>
+</MYMViewModule>

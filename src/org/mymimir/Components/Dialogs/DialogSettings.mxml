@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MYMDialog xmlns="org.mymimir.sdk.Components.Dialogs.*" xmlns:mx="http://www.adobe.com/2006/mxml" width="400" height="444" backgroundColor="#ECECEC" layout="absolute" title="Wiki Settings" xmlns:ns1="org.mymimir.sdk.Components.*" 
+		creationComplete="init()" alpha="75">
+		
+		
+	<mx:Script>
+		<![CDATA[
+			import org.mymimir.sdk.IApplication;
+			import org.mymimir.Application;
+			
+			private var _app:IApplication;
+			private var _pages:Array;
+			
+			private function init():void
+			{
+				this._app = Application.getInstance();
+				this._app.wiki.backend.getPagesByFilter("", this.cbPagesGot);
+				
+				this.inpFirstPage.text = this._app.wiki.firstPage;
+				this.gridPages.selectedItem = this._app.wiki.firstPage;
+				
+				this.inpPageInit.text = this._app.wiki.initialPageText;
+				this.inpName.text = this._app.wiki.name;
+			}
+			
+			private function cbPagesGot(success:Boolean, pages:Array, ... args):void
+			{
+				this._pages = pages;
+				this.gridPages.dataProvider = this._pages;
+				this.gridPages.invalidateList();				
+			}
+			
+			private function onGridPagesClick(ev:Event):void
+			{
+				this.inpFirstPage.text = this.gridPages.selectedItem as String;
+			}
+			
+			
+			private function onBtnCancel():void
+			{
+				this.close();
+			}
+			
+			private function onBtnSave():void
+			{
+				this.close();
+			}
+			
+			
+			
+		]]>
+	</mx:Script>	
+		
+		
+		
+		
+	<mx:Label x="10" y="10" text="Name"/>
+	<mx:Label x="10" y="36" text="Initial Page Content"/>
+	<mx:Label x="10" y="108" text="First Page"/>
+	<mx:TextInput x="135" y="8" width="235" id="inpName"/>
+	<mx:DataGrid x="135" y="136" width="235" height="216" id="gridPages" click="onGridPagesClick(event)">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Page" dataField="col1"/>
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Button x="316" y="370" label="Save" click="onBtnSave()"/>
+	<mx:TextInput x="135" y="106" width="235" id="inpFirstPage" editable="false"/>
+	<ns1:UndoableTextArea x="135" y="35" width="235" height="63" borderStyle="inset" id="inpPageInit"/>
+	<mx:HRule x="0" y="360" width="380"/>
+	<mx:Button x="245" y="370" label="Cancel" click="onBtnCancel()"/>
+	
+</MYMDialog>

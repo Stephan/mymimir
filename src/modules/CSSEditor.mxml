@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MYMViewModule xmlns="org.mymimir.sdk.Views.*" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+	name="org.modules.CSSEditorView" xmlns:ns1="org.mymimir.sdk.Components.*">
+	
+	
+	<mx:Script>
+		<![CDATA[
+			import org.mymimir.Wiki;
+			import org.mymimir.sdk.Tools;
+			import org.mymimir.sdk.IWikiPage;
+			import org.mymimir.WikiPage;
+			import org.mymimir.sdk.IConverter;
+			import org.mymimir.sdk.IApplication;
+			import org.mymimir.sdk.Protocols;
+			import org.mymimir.sdk.ConverterFactory;
+			import org.mymimir.sdk.URLHandler;
+
+			private var _page:IWikiPage;
+			private var _css:String;
+			private var _lastFile:File;
+			private var _firstFile:File;
+			private var _changed:Boolean;
+
+			private const TextAreaStyles:Array = ["fontFamily", "fontSize", "color", "backgroundColor"];
+
+			override public function init(app:IApplication, description:XML):void
+			{
+				this._description = description;
+				this._title = "CSSEditor";
+				super.init(app, description);
+				this._protocols = new Array(Protocols.HTTPProtocol, Protocols.WikiPageProtocol);
+			}
+
+
+			private function loadCSS(url:String):void
+			{
+				var fs:FileStream = new FileStream();
+				var f:File = new File(url);
+				
+				if (!this._firstFile)
+				{
+					this._firstFile = f
+				}
+				
+				if (f.exists)
+				{
+					fs.open(f, FileMode.READ);
+					this._editor.text = fs.readMultiByte(f.size, "iso-8859-15");
+					fs.close();
+				}
+				
+				this._changed = false;
+			}
+			
+			private function saveCSS():void
+			{
+				if (!this._changed) return;
+					
+				var fs:FileStream = new FileStream();
+				//Store changes
+				fs.open(this._firstFile, FileMode.WRITE);
+				fs.writeMultiByte(this._editor.text, "iso-8859-15");
+				fs.close();
+				
+				//Create a new css file with a link to the Wiki CSS file because of the stupid caching
+				var f:File = new File(_app.wiki.url).resolvePath("Style").resolvePath(org.mymimir.sdk.Tools.getUniqueFileName("css"));
+				fs.open(f, FileMode.WRITE)
+				fs.writeMultiByte(this._editor.text, "iso-8859-15");
+				fs.close();
+				
+				//Tell the app to use the new CSS file
+				this._app.setWikiStyleSheetURL(f.url);
+				
+				//Delete old temp CSS file
+				if (this._lastFile) this._lastFile.deleteFile();
+				this._lastFile = f;
+				
+				this._changed = false;
+			}
+			
+		
+			private function onEditorCreated():void
+			{
+				this.loadCSS(this._app.getWikiStyleSheetURL());	
+				
+				var attrs:XMLList = _description.attributes();
+				for each (var attr:XML in attrs)
+					if (TextAreaStyles.indexOf(String(attr.name())) != -1)
+						this._editor.setStyle(attr.name(), attr.toString());
+						
+				this._editor.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+				this._editor.addEventListener(Event.CHANGE, onTextChange);
+		
+			}
+			
+			
+			private function onTextChange(ev:Event):void
+			{
+				this._changed = true;
+			}
+			
+			private function onKeyDown(ev:KeyboardEvent):void
+			{
+				switch (ev.keyCode)
+				{
+					case Keyboard.ENTER:
+					case Keyboard.UP:
+					case Keyboard.DOWN:
+					case Keyboard.PAGE_DOWN:
+					case Keyboard.PAGE_UP:
+						if (this.chkAuto.selected)
+							this.saveCSS();
+				}
+			}
+			
+				
+			private function onBtnReload():void
+			{
+				this.saveCSS();
+ 			}
+ 			
+ 			override public function cleanUp():void
+ 			{
+				if (this._lastFile) this._lastFile.deleteFile();
+ 			}
+			
+		]]>
+	</mx:Script>
+	
+	
+	
+	<mx:VBox id="_vBox" top="0" left="0" right="0" bottom="0">
+		<mx:HBox width="100%">
+			<mx:Button label="Reload" click="onBtnReload()"/>
+			<mx:CheckBox label="Autoupdate" id="chkAuto" />
+		</mx:HBox>
+		<ns1:UndoableTextArea width="100%" id="_editor" creationComplete="onEditorCreated()" height="100%"/>
+	</mx:VBox>
+
+</MYMViewModule>

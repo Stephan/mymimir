@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actionScriptProperties mainApplicationPath="mymimir.mxml" version="3">
+<compiler additionalCompilerArguments="-locale en_US" copyDependentFiles="true" enableModuleDebug="true" generateAccessible="false" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersion="9.0.28" htmlPlayerVersionCheck="true" outputFolderPath="bin-debug" sourceFolderPath="src" strict="true" useApolloConfig="true" verifyDigests="true" warn="true">
+<compilerSourcePath/>
+<libraryPath defaultLinkType="1">
+<libraryPathEntry kind="4" path=""/>
+<libraryPathEntry kind="1" linkType="1" path="libs"/>
+<libraryPathEntry kind="3" linkType="1" path="/mymimir.sdk/bin/mymimir.sdk.swc" useDefaultLinkType="false"/>
+</libraryPath>
+<sourceAttachmentPath/>
+</compiler>
+<applications>
+<application path="mymimir.mxml"/>
+</applications>
+<modules>
+<module application="src/mymimir.mxml" destPath="modules/CSSEditor.swf" optimize="true" sourcePath="src/modules/CSSEditor.mxml"/>
+<module application="src/mymimir.mxml" destPath="modules/HTMLView.swf" optimize="true" sourcePath="src/modules/HTMLView.mxml"/>
+<module application="src/mymimir.mxml" destPath="modules/HTMLExporter.swf" optimize="true" sourcePath="src/modules/HTMLExporter.mxml"/>
+<module application="src/mymimir.mxml" destPath="modules/ClipboardDump.swf" optimize="true" sourcePath="src/modules/ClipboardDump.mxml"/>
+<module application="src/mymimir.mxml" destPath="modules/SimplePageList.swf" optimize="true" sourcePath="src/modules/SimplePageList.mxml"/>
+</modules>
+<buildCSSFiles/>
+</actionScriptProperties>

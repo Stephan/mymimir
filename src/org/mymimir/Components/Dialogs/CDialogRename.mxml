@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MYMDialog xmlns="org.mymimir.sdk.Components.Dialogs.*" xmlns:mx="http://www.adobe.com/2006/mxml" width="400" height="154" title="Rename Wiki page" backgroundColor="#ECECEC">
+
+
+	<mx:Script>
+		<![CDATA[
+			
+			public static var EventRename:String	= "RenamePage.Rename";
+			public static var EventCancel:String	= "RenamePahe.Cancel";
+
+			public static var DataNewName:String 	= "newName";
+			public static var DataReplaceLinks:String  = "replaceLinks";
+			
+			
+			private function onNewNameChange():void
+			{
+				if (this.inpNewName.text != "") this.btnRename.enabled = true;
+				else this.btnRename.enabled = false;
+			}
+			
+			private function onClickCancel():void
+			{
+				this.close();
+				this.dispatchEvent(new Event(CDialogRename.EventCancel));
+			}
+			
+			private function onClickRename():void
+			{
+				this.dispatchEvent(new Event(CDialogRename.EventRename));
+				this.close();
+			}
+			
+			public function getData():Object
+			{
+				var ret:Object = new Object();
+				ret[CDialogRename.DataNewName] = inpNewName.text;
+				ret[CDialogRename.DataReplaceLinks] = this.cbxReplace.selected;
+				
+				return ret;	
+			}
+			
+		]]>
+	</mx:Script>
+
+
+
+
+	<mx:Label text="New name" top="10" left="10"/>
+	<mx:TextInput left="80" top="8" right="10" id="inpNewName" change="onNewNameChange()"/>
+	<mx:CheckBox label="Replace links to this page in other pages" selected="true" textAlign="left" id="cbxReplace" left="80" top="38"/>
+	<mx:HRule right="0" left="0" top="68"/>
+	<mx:Button label="Rename" right="10" width="73" top="78" enabled="false" click="onClickRename()" id="btnRename"/>
+	<mx:Button label="Cancel" right="91" width="63" top="78" click="onClickCancel()"/>
+	
+	
+	
+	
+</MYMDialog>

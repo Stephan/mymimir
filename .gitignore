@@ -1,0 +1,6 @@
+*.air
+*.swa
+*.swf
+*.swc
+bin-debug
+

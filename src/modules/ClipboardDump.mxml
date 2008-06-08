@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MYMViewModule xmlns="org.mymimir.sdk.Views.*" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+	name="org.modules.ClipboardDump">
+	
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.controls.Image;
+			import mx.graphics.codec.JPEGEncoder;
+			import mx.graphics.codec.PNGEncoder;
+			import org.mymimir.sdk.Tools;
+			import org.mymimir.sdk.IApplication;
+			import modules.ClipboardDumpItem;
+			
+			public static const TypeText:String   = "Text";
+			public static const TypeHTML:String   = "HTML";
+			public static const TypeURL:String    = "URL";
+			public static const TypeFile:String   = "File";
+			public static const TypeBitmap:String = "Bitmap";
+			public static const StorageDirectory:String  = "ClipboardDump";
+			public static const StorageFile:String  = "data.xml";
+			
+			public static const ThumbSize:Number = 150;
+			
+			
+			[Bindable] private var _data:Array = new Array();
+			private var _xmlData:XML = <clipboardDump/>;
+			private var _directory:File;
+			
+			
+			override public function init(app:IApplication, description:XML):void
+			{
+				super.init(app, description);
+				this.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+				//this._data = new Array();
+				//this._directory = new File(this._app.getDataPath()).resolvePath(ClipboardDump.StorageDirectory);
+				this.loadData();
+			}
+			
+			private function onKeyDown(ev:KeyboardEvent):void
+			{
+				trace("KeyDown");
+			}
+			
+			
+			private function onGridComplete():void
+			{
+				this._grid.dataProvider = this._data;				
+			}
+			
+			
+			override public function handlePaste():Boolean
+			{
+				if (this._displayed)
+				{
+					return this.addDataFromClipboard();
+				}
+				
+				return false;
+			}
+			
+			
+			private function loadData():void
+			{
+				return;
+				var file:File = this._directory.resolvePath(ClipboardDump.StorageFile);
+				var fs:FileStream = new FileStream();
+				
+				if (file.exists)
+				{
+					fs.open(file, FileMode.READ);
+					this._xmlData = new XML(fs.readUTFBytes(file.size));
+					
+					
+					var listObjects:XMLList = this._xmlData.listObject;
+					
+					for each (var lo:XML in listObjects)
+					{
+						this.addListObjectFromXML(lo);
+					}
+					
+				}
+			}
+			
+			
+			private function addDataFromClipboard():Boolean
+			{
+				var clip:Clipboard = flash.desktop.Clipboard.generalClipboard;
+				var ret:Boolean = false;
+				
+				if (clip.hasFormat(ClipboardFormats.TEXT_FORMAT))
+					ret = this.addTextDataFromClipboard(clip);
+					
+				if (clip.hasFormat(ClipboardFormats.HTML_FORMAT))
+					ret = this.addHTMLDataFromClipboard(clip);
+								
+/* 				if (clip.hasFormat(ClipboardFormats.FILE_LIST_FORMAT))
+					ret = this.addFileListFromClipboard(clip);
+
+				if (clip.hasFormat(ClipboardFormats.URL_FORMAT))
+					ret = this.addURLDataFromClipboard(clip);
+*/
+				if (clip.hasFormat(ClipboardFormats.BITMAP_FORMAT))
+					ret = this.addBitmapDataFromClipboard(clip);
+   
+   				return ret;
+			}
+			
+			
+			private function addListObjectFromXML(desc:XML):void
+			{
+				var lObj:Object = this.createListObject(desc.@type);
+				
+				switch (new String(desc.@type))
+				{
+					case ClipboardDump.TypeText:
+					
+							lObj.data = desc.text().toString();
+							break;
+					
+					case ClipboardDump.TypeBitmap:
+							
+							var loader:Loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onBitmapLoaded);
+							loader.contentLoaderInfo.addEventListener(flash.events.IOErrorEvent.IO_ERROR, onBitmapLoadError);
+							lObj.data = [null, Tools.CDATAStrip(desc.text().toString()), loader];
+						 	var req:URLRequest = new URLRequest(lObj.data[1]);
+							loader.load(req);
+
+							var fs:FileStream = new FileStream();
+							var file:File = new File(lObj.data[1]);
+							fs.open(file, FileMode.READ);
+							var pngData:ByteArray = new ByteArray();
+							fs.readBytes(pngData);
+							fs.close();
+												
+					case ClipboardDump.TypeFile:
+					case ClipboardDump.TypeHTML:
+					case ClipboardDump.TypeURL:
+					
+				}
+				this._data.push(lObj);
+			}
+			
+			
+			private function onBitmapLoaded(ev:Event):void
+			{
+				var li:LoaderInfo = ev.currentTarget as LoaderInfo;
+				if (!li) return;
+				for each (var obj:Object in this._data)
+					if (obj.type == ClipboardDump.TypeBitmap)
+						if (obj.data[2] == li.loader)
+						{
+							obj.data[0] = this.createThumbnail(Bitmap(li.content).bitmapData, ClipboardDump.ThumbSize);
+							this._grid.invalidateList();
+							return;
+						}
+			}
+			
+			private function onBitmapLoadError(ev:Event):void
+			{
+				
+			}
+			
+			
+			private function addListObject(lObj:Object):void
+			{
+				this._data.push(lObj);
+ 				this._grid.invalidateList();
+ 				
+ 				var newXML:XML = <listObject />
+ 				newXML.@when = lObj.when;
+ 				newXML.@type = lObj.type;
+ 				newXML.@description = lObj.description;
+ 				
+ 				if (lObj.type != ClipboardDump.TypeBitmap)
+ 					newXML.appendChild(Tools.cdata(lObj.data.toString()));
+ 				else
+ 					newXML.appendChild(Tools.cdata(lObj.data[1].toString()));
+ 				
+ 				this._xmlData.appendChild(newXML);		
+			}
+			
+			override public function cleanUp():void
+			{
+				return;
+				var file:File = this._directory.resolvePath(ClipboardDump.StorageFile);
+				var fs:FileStream = new FileStream();
+				
+				fs.open(file, FileMode.WRITE);
+				fs.writeUTFBytes(this._xmlData.toXMLString());
+				fs.close();
+			}
+			
+			private function createListObject(type:String):Object
+			{
+				var ret:Object = new Object();
+				ret.when = org.mymimir.sdk.Tools.strftime("%d.%m.%Y, %H:%M:%S");
+				ret.type = type;
+				ret.preview = "";
+				ret.description = "";
+				ret.funcs = "";
+				
+				return ret;
+			}
+			
+			private function createThumbnail(bmpData:BitmapData, size:int):*
+			{
+				var jpg:* = null;
+				var jpgEnc:JPEGEncoder = new JPEGEncoder(50);
+				var sx:Number;
+				var sy:Number;
+				
+				sx = size / bmpData.rect.width;
+				sy = size / bmpData.rect.height;
+				
+				if (sx > sy) sy = sx; else sx = sy;
+				if (sx < 1)
+				{
+					var matrix:Matrix;
+					matrix = new Matrix();				
+					matrix.scale(sx, sy); 
+					
+					var bmpData2:BitmapData = new BitmapData(bmpData.rect.width * sx, bmpData.rect.height * sy);
+					bmpData2.draw(bmpData, matrix);
+					jpg = jpgEnc.encode(bmpData2);
+					bmpData2.dispose();
+				}
+				else
+				{
+					jpg = jpgEnc.encode(bmpData);
+				}
+
+				return jpg;				
+			}
+			
+			private function addBitmapDataFromClipboard(clip:Clipboard):Boolean
+			{
+				
+				var bmpData:BitmapData = clip.getData(ClipboardFormats.BITMAP_FORMAT) as BitmapData;
+				var bmp:Bitmap = new Bitmap(bmpData);
+
+				var matrix:Matrix = new Matrix();
+				matrix.translate(0 - (bmpData.rect.x + 1), 0 - (bmpData.rect.y + 1));
+				bmpData.draw(bmpData, matrix );				
+				
+				var png:* = null;
+				var pngEnc:PNGEncoder = new PNGEncoder();
+				png = pngEnc.encode(bmpData);
+				
+				var fn:String = Tools.getUniqueFileName("png");
+				var file:File = this._directory.resolvePath(fn);
+				var fs:FileStream = new FileStream;
+				fs.open(file, flash.filesystem.FileMode.WRITE );
+				fs.writeBytes(png, 0, 0);
+				fs.close();
+				
+				var newOb:Object = this.createListObject(ClipboardDump.TypeBitmap);
+				newOb.data = [this.createThumbnail(bmpData, ClipboardDump.ThumbSize), file.url];
+				this.addListObject(newOb);
+				bmpData.dispose();			
+				return true;
+			}
+			
+			private function addTextDataFromClipboard(clip:Clipboard):Boolean
+			{
+				var newOb:Object = this.createListObject(ClipboardDump.TypeText);
+				
+				newOb.data = clip.getData(ClipboardFormats.TEXT_FORMAT);
+				this.addListObject(newOb);
+				
+				return true;
+			}
+			
+
+			private function addHTMLDataFromClipboard(clip:Clipboard):Boolean
+			{
+				var newOb:Object = this.createListObject(ClipboardDump.TypeText);
+				
+				newOb.data = clip.getData(ClipboardFormats.HTML_FORMAT);
+				this._data.push(newOb);
+				
+				return true;
+			}
+			
+			
+			
+		]]>
+	</mx:Script>
+	
+	
+	
+	
+	
+	<mx:DataGrid x="0" y="0" width="100%" height="100%" id="_grid" dataProvider="{_data}" variableRowHeight="true">
+		<mx:columns>
+			<mx:DataGridColumn headerText="When" dataField="when"/>
+			<mx:DataGridColumn headerText="Type" dataField="type"/>
+			<mx:DataGridColumn headerText="Preview" dataField="preview">
+				<mx:itemRenderer>
+					<mx:Component>
+						<mx:Canvas creationComplete="init()">
+							<mx:Script>
+								<![CDATA[
+									import mx.controls.Image;
+									import mx.core.UIComponent;
+									import mx.core.ScrollPolicy;
+									import mx.containers.Canvas;
+									import mx.controls.TextArea;
+									import modules.ClipboardDump;
+									
+									private function init():void
+									{
+										this.horizontalScrollPolicy = mx.core.ScrollPolicy.OFF;
+										this.verticalScrollPolicy = mx.core.ScrollPolicy.OFF;
+										
+										switch (data.type)
+										{
+											case ClipboardDump.TypeText:
+											case ClipboardDump.TypeHTML:
+													this.addChild(createTextItem());
+													break;
+
+											case ClipboardDump.TypeBitmap:
+													var bmp:UIComponent = createBitmapItem();
+													if (bmp)
+														this.addChild(createBitmapItem());
+													break;
+													
+										}
+										
+									}
+									
+									private function createTextItem():UIComponent
+									{
+										var txf:TextArea = new TextArea();
+										txf.horizontalScrollPolicy = mx.core.ScrollPolicy.AUTO;
+										txf.verticalScrollPolicy = mx.core.ScrollPolicy.AUTO;
+										txf.wordWrap = false;
+										txf.percentWidth = 100;
+										txf.height = 200;
+										txf.text = this.data.data as String;
+										txf.editable = false;
+										
+										return txf;										
+									}
+									
+									private function createBitmapItem():UIComponent
+									{
+										if (!data.data[0]) return null;
+										var ret:Image = new Image();
+										ret.source = data.data[0];
+										return ret;
+									}
+									
+									
+								]]>
+							</mx:Script>
+						</mx:Canvas>
+					</mx:Component>
+				</mx:itemRenderer>
+			</mx:DataGridColumn>
+			<mx:DataGridColumn headerText="Description" dataField="description"/>
+			<mx:DataGridColumn headerText="Function" dataField="funcs"/>
+		</mx:columns>
+	</mx:DataGrid>
+	
+	
+	
+	
+	
+</MYMViewModule>

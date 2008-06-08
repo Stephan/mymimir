@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MYMDialog xmlns="org.mymimir.sdk.Components.Dialogs.*" xmlns:mx="http://www.adobe.com/2006/mxml" width="594" height="208" title="Create a new Wiki…" backgroundAlpha="1.0" backgroundColor="#ECECEC" cornerRadius="4" alpha="1.0" color="#0B333C">
+
+
+	<mx:Script>
+		<![CDATA[
+			import mx.events.FileEvent;
+		
+			public static var EventCreate:String	= "NewWiki.Create";
+			public static var EventAbort:String		= "NewWiki.Abort";
+
+			public static var DataWikiName:String 	= "wikiName";
+			public static var DataFirstPage:String  = "firstPage";
+			public static var DataDirectory:String  = "directory";
+						
+			
+			private var _directory:File = File.documentsDirectory;
+			
+						
+			private function onDirectorySelect(ev:Event):void
+			{
+				this._directory = ev.target as File;
+				this.inpDirectory.text = this._directory.url;
+				this.onInpChange();
+			}
+			
+			private function onChoose():void
+			{
+				this._directory.browseForDirectory("Choose a directory to store your Wiki");
+				this._directory.addEventListener(Event.SELECT, onDirectorySelect);
+			}
+			
+			private function onAbort():void
+			{
+				this.dispatchEvent(new Event(CDialogNewWiki.EventAbort));
+				this.close();
+			}
+			
+			
+			private function onInpChange():void
+			{
+				if ((this.inpDirectory.text != "") && (this.inpFirstPageName.text != "") && (this.inpWikiName.text != ""))
+					this.btnCreate.enabled = true;
+				else this.btnCreate.enabled = false;
+			}
+			
+			private function onCreate():void
+			{
+				if ((this.inpDirectory.text != "") && (this.inpFirstPageName.text != "") && (this.inpWikiName.text != ""))
+				{
+					this.dispatchEvent(new Event(CDialogNewWiki.EventCreate));
+					this.close();
+				}
+			}
+			
+			
+			public function getData():Object
+			{
+				var ret:Object = new Object();
+				
+				ret[CDialogNewWiki.DataWikiName] = this.inpWikiName.text;
+				ret[CDialogNewWiki.DataFirstPage] = this.inpFirstPageName.text;
+				ret[CDialogNewWiki.DataDirectory] = this.inpDirectory.text;
+				
+				return ret;
+			}
+			
+		]]>
+	</mx:Script>
+
+
+
+
+
+
+
+	<mx:Label text="Name of your Wiki" left="10" top="10"/>
+	<mx:Label text="Name of the first page" left="10" top="36"/>
+	<mx:HRule right="0" left="0" top="62"/>
+	<mx:Label text="Directory to store your Wiki" left="10" top="72"/>
+	<mx:HRule left="0" right="0" top="124"/>
+	<mx:Button label="Create Wiki" right="10" click="onCreate()" id="btnCreate" enabled="false" bottom="10"/>
+	<mx:Button label="Abort" right="110" click="onAbort()" bottom="10"/>
+	<mx:TextInput top="8" left="174" right="10"  change="onInpChange()" enabled="true" editable="true" id="inpWikiName"/>
+	<mx:TextInput top="34" left="174" right="10" change="onInpChange()" editable="true" enabled="true" id="inpFirstPageName"/>
+	<mx:Button label="Choose" click="onChoose()"  right="10" top="70"/>
+	<mx:TextInput change="onInpChange()" editable="false" enabled="true" id="inpDirectory" right="85" top="70" left="174" backgroundColor="#EAEAEA"/>
+	<mx:Label text="A subdirectory with the name of the Wiki will be created" fontWeight="normal" top="98" left="174"/>
+	
+</MYMDialog>

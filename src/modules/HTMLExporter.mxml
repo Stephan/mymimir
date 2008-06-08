@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MYMViewModule xmlns="org.mymimir.sdk.Views.*" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute"
+	name="org.modules.HTMLExporter">
+	
+	
+	<mx:Script>
+		<![CDATA[
+			import org.mymimir.sdk.IWiki;
+			import org.mymimir.sdk.IConverter;
+			import org.mymimir.sdk.IApplication;
+			import org.mymimir.sdk.IWikiPage;
+			import org.mymimir.sdk.ConverterFactory;
+			import org.mymimir.sdk.Tools;
+			import org.mymimir.sdk.Protocols;
+			
+			
+			
+			private static var RegWikiLinkStr:String = Tools.replaceMetaCharacters(Protocols.WikiPageProtocol);
+			private static var RegWikiLink:RegExp = new RegExp("(\")(" + RegWikiLinkStr + ")([^\"]+)(\")", "g");
+			
+			private var _destination:String;
+			private var _directory:File;
+			private var _converter:IConverter;
+			
+			
+			override public function init(app:IApplication, description:XML):void
+			{
+				super.init(app, description);
+				this._converter = ConverterFactory.getConverter("HTML");
+				
+			}
+			
+			
+			override public function set wiki(wiki:IWiki):void
+			{
+				this._wiki = wiki;
+			}
+			
+			private function onDirectorySelect(ev:Event):void
+			{
+				this._directory = ev.target as File;
+				this._destination = this._directory.url;
+			}
+			
+			private function onBtnChooseDir():void
+			{
+				if (!this._directory) this._directory = File.documentsDirectory;
+				
+				this._directory.browseForDirectory("Export destination: Choose a directory");
+				this._directory.addEventListener(Event.SELECT, onDirectorySelect);
+			}
+			
+			private function onBtnExport():void
+			{
+				if (!this._destination) return;
+				this.export();
+			}
+			
+			
+			
+			private function cbExportPagesGot(success:Boolean, pages:Array, ... args):void
+			{
+				if (!pages) return;
+				var page:IWikiPage;
+				
+				for each (var pn:String in pages)
+				{
+					page = this._wiki.getPageInstance(pn);
+					this.exportPage(page);
+				}				
+			}
+			
+			private function export():void
+			{
+				this._wiki.backend.getPagesByFilter("", this.cbExportPagesGot);
+			}
+			
+			private function exportPage(page:IWikiPage):void
+			{
+				var html:String = this._converter.convertText(page.text);
+				var file:File = this._directory.resolvePath(page.name + ".html");
+				var fileStream:FileStream = new FileStream();
+				
+				html = html.replace(RegWikiLink, "$1$3.html$4");
+				
+				fileStream.open(file, FileMode.WRITE);
+				fileStream.writeUTFBytes(html);
+				fileStream.close();
+			}
+			
+			
+			
+			
+		]]>
+	</mx:Script>
+	
+	
+	
+	
+	
+	<mx:DataGrid top="0" left="0" width="217" bottom="0">
+		<mx:columns>
+			<mx:DataGridColumn headerText="Page" dataField="page" width="130"/>
+			<mx:DataGridColumn headerText="Changed?" dataField="changed" />
+		</mx:columns>
+	</mx:DataGrid>
+	<mx:Panel layout="absolute" title="Export Settings" backgroundColor="#ECECEC" right="10" bottom="10" left="225" top="0">
+		<mx:Label text="Destination" top="10" left="10"/>
+		<mx:TextInput editable="true" enabled="true" right="137" top="8" left="89"/>
+		<mx:Button label="Choose Dir" width="119" right="10" top="8" click="onBtnChooseDir()"/>
+		<mx:HRule x="0" y="58" width="555"/>
+		<mx:Button label="Export" right="10" top="68" click="onBtnExport()"/>
+		<mx:Label text="You can either choose a directory or enter an ftp location" top="32" left="89"/>
+	</mx:Panel>
+	
+</MYMViewModule>

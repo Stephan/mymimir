@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication backgroundImage="" xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" creationComplete="init();" xmlns:aw="org.airwiki.*" xmlns:awc="org.airwiki.components.*">
+
+	<!-- <mx:Style source="assets.css" /> -->
+
+	<mx:Script>
+		<![CDATA[
+			import org.mymimir.sdk.IApplication;
+			import org.mymimir.sdk.Components.Dialogs.MYMDialogError;
+			import org.mymimir.sdk.MYMError;
+			import mx.collections.XMLListCollection;
+			import org.mymimir.Application;
+			import flash.display.NativeWindow;
+			import flash.desktop.NativeApplication;
+		
+			private var _application:Application = Application.getInstance(this) as Application;
+			
+			[Bindable] public var myMenuBarXML:XMLListCollection = new XMLListCollection(<>
+													<menuitem label="Wiki" data="">
+														<menuitem label="New" data="Wiki.New" />
+														<menuitem label="Open" data="Wiki.Open" />
+														<menuitem type="separator" />
+														<menuitem label="Setup Interface" data="Wiki.ViewSetup" />
+														<menuitem type="separator" />
+														<menuitem label="Exit" data="Wiki.Exit" />
+													</menuitem>	
+													<menuitem label="Page" data="">
+														<menuitem label="Rename" data="Page.Rename" />
+														<menuitem label="Delete" data="Page.Delete" />
+													</menuitem>	
+												</>);
+		
+			private var _menuDefinition:XML = <menu>
+													<menuitem label="Wiki" data="" valid="*">
+														<menuitem label="New" data="Wiki.New" />
+														<menuitem label="Open" data="Wiki.Open" />
+														<menuitem type="separator" />
+														<menuitem label="Setup Interface" data="Wiki.ViewSetup" />
+														<menuitem type="separator" />
+														<menuitem label="Settings" data="Wiki.Settings" />
+														<menuitem type="separator" />
+														<menuitem label="Exit" data="Wiki.Exit" />
+													</menuitem>	
+													<menuitem label="Page" data="" valid="*">
+														<menuitem label="Rename" data="Page.Rename" />
+														<menuitem label="Delete" data="Page.Delete" />
+													</menuitem>	
+													<menuitem label="Edit" data="" valid="win">
+														<menuitem label="Cut" key="x" data="Edit.Cut" />
+														<menuitem label="Copy" key="c" data="Edit.Copy" />
+														<menuitem label="Paste" key="v" data="Edit.Paste" />
+														<menuitem label="Select All" key="a" data="Edit.SelectAll" />
+													</menuitem>			
+											  </menu>
+			
+			private function init():void
+			{
+
+				buildNativeMenu();
+					
+				try
+				{
+					this._application.init();
+					this.addEventListener(Event.EXITING, onAppExiting);										// Handle app exiting
+					this.addEventListener(Event.CLOSING, onAppClosing);										// Handle window closing
+					this.addEventListener(InvokeEvent.INVOKE, onAppInvoke);									// Handle app invocation							
+					this._application.restoreLastState();
+				}
+				catch(err:MYMError)
+				{
+				 	var pop:MYMDialogError = new MYMDialogError();
+					pop.message = err.message;
+					pop.additional = err.info;
+			
+					pop.popUpModal(this);
+				}
+			}
+			
+			private function finishApplication():void
+			// Cleanup
+			{
+				this._application.close();
+			}				
+
+	/*** Native Menu
+	/********************************************************************************************/
+			private function buildNativeMenu():void
+			{
+				var natMenu:NativeMenu;
+				
+				//OSX
+				if (NativeApplication.supportsMenu) 
+				{
+					natMenu = this.nativeApplication.menu;
+					this.createNativeMenu(natMenu, true);
+				}
+				// Win
+				else
+				{
+					this.nativeWindow.menu = new NativeMenu;
+					this.createNativeMenu(this.nativeWindow.menu, false);
+				}
+				
+			}
+			
+			
+			private function onNativeMenu(ev:Event):void
+			{
+				
+			}
+			
+			private function createNativeMenu(origMenu:NativeMenu, osx:Boolean):void
+			{
+				var index:int = 0;
+				var subs:XMLList = this._menuDefinition.menuitem;
+				
+				// If we're in OSX remove some menu entries but keep the Application menu
+				if (osx)
+				{
+					origMenu.removeItem(origMenu.items[1]);
+					origMenu.removeItem(origMenu.items[2]);
+					index += 1;
+				}
+				
+				for each (var sub:XML in subs)
+				{
+					if (osx)
+						if ((sub.@valid != "*") && (sub.@valid != "osx")) continue;
+					else
+						if ((sub.@valid != "*") && (sub.@valid != "win")) continue;						
+
+					var items:XMLList = sub.menuitem;
+					var subMenu:NativeMenu = new NativeMenu();					
+					for each (var item:XML in items)
+					{
+						var menItem:NativeMenuItem;
+						if (item.@type == "separator")
+							menItem = new NativeMenuItem("Sep", true);
+						else
+						{
+							menItem = new NativeMenuItem(item.@label);
+							menItem.keyEquivalent = item.@key;
+							if (osx) menItem.keyEquivalentModifiers = [Keyboard.COMMAND];
+							else menItem.keyEquivalentModifiers = [Keyboard.CONTROL];
+						}
+						menItem.data = new String(item.@data);
+						subMenu.addItem(menItem);
+					}	
+					origMenu.addSubmenuAt(subMenu, index, sub.@label);
+					index += 1;
+				} 
+				origMenu.addEventListener(Event.SELECT, this._application.onNativeMenuItemClick);
+				this.mainCanvas.removeChild(this.menuBar);
+				this.subCanvas.setStyle("top", "10");
+			}
+	
+	
+
+
+	/*** EventHandler
+	/********************************************************************************************/
+		
+			private function onAppInvoke(e:Event):void
+			// Called upon invokation of application
+			{
+			}
+			
+			private function onAppExiting(e:Event):void
+			// Called upon app exit
+			{
+				this.finishApplication();
+			}
+			
+			private function onAppClosing(e:Event):void
+			// Called upon window closing, since we only have one window, this means, closing the app too
+			{
+				this.finishApplication();
+			}	
+			
+			private function onMainViewComplete():void			{ this._application.mainView = this.mainView; }	
+		]]>
+	</mx:Script>
+
+
+
+
+	<mx:Canvas id="mainCanvas" label="Main" width="100%" height="100%">
+		<mx:MenuBar id="menuBar" top="0" right="0" left="0" labelField="@label" dataProvider="{myMenuBarXML}" itemClick="_application.onMenuItemClick(event)" cornerRadius="0">	
+		</mx:MenuBar>
+		<mx:Canvas id="subCanvas" top="30" left="0" right="0" bottom="0">
+			<mx:Button id="buttonBack" label="Back" top="0" left="10" click="_application.onButtonBackClick(event)" />
+			<mx:Button id="buttonForwad" label="Forward" top="0" x="82" click="_application.onButtonForwardClick(event)" />
+			<mx:TextInput horizontalCenter="0" top="0" width="260" id="inpSearchQuery" enter="_application.onInpQueryEnter(event)" />
+			<mx:Button label="Find" click="_application.onBtnFindClick()" horizontalCenter="163" top="0"/>
+			<mx:Canvas id="mainView" creationComplete="onMainViewComplete()" label="Main" left="10" right="10" top="30" bottom="10" />
+		</mx:Canvas>
+	</mx:Canvas>
+
+</mx:WindowedApplication>
