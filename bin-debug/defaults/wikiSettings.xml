@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wikiSettings>
+	<name></name>
+	<attribute name="pageInitialText" value="+ {func:pagename}"/>
+    <view name="org.mymimir.hDivided" source="internal" id="hdividedStandard" multiHandling="true" title="Standard" width="100%" height="100%">
+      <view name="org.mymimir.tree" source="internal" id="tree" width="180%" height="100%"/>
+      <view name="org.mymimir.tabbedView" source="internal" id="tabStandard" width="815%" height="100%">
+        <view name="org.mymimir.html" source="/modules/HTMLView.swf" id="htmlStandard" width="100%" height="100%"/>
+        <view name="org.mymimir.editor" source="internal" fontFamily="Courier New" fontSize="14" backgroundColor="white" color="black" liveUpdate="false" width="100%" height="100%"/>
+      </view>
+    </view>
+
+</wikiSettings>

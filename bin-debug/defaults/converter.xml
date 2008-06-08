@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<converter type="HTML">
+
+	<specials>
+		<replace>
+			<oldstring><![CDATA[<]]></oldstring>
+			<newstring><![CDATA[&lt;]]></newstring>
+		</replace>
+		
+		<replace>
+			<oldstring><![CDATA[>]]></oldstring>
+			<newstring><![CDATA[&gt;]]></newstring>
+		</replace>
+	</specials>
+
+
+
+	<prefix>
+		<![CDATA[
+<?xml version="1.0" encoding="utf-8" ?>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>{func:wikiname} - {func:pagename}</title>
+		<link rel="stylesheet" type="text/css" href="{func:wikistylesheet}" />
+	</head>
+	<body>
+		]]>	
+	</prefix>
+	
+	<suffix>
+		<![CDATA[
+	</body>
+</html>
+		]]>	
+	</suffix>
+
+	<rule name="Headline1">
+		<![CDATA[
+			<h1>$text</h1>
+		]]>
+	</rule>
+
+	<rule name="Headline2">
+		<![CDATA[
+			<h2>$text</h2>
+		]]>
+	</rule>
+
+	<rule name="Headline3">
+		<![CDATA[
+			<h3>$text</h3>
+		]]>
+	</rule>
+
+	<rule name="Headline4">
+		<![CDATA[
+			<h4>$text</h4>
+		]]>
+	</rule>
+	
+	<rule name="HRule">
+		<![CDATA[
+			<hr/>
+		]]>
+	</rule>
+	
+	<rule name="Strong">
+		<![CDATA[
+			<strong>$text</strong>
+		]]>
+	</rule>
+	
+	<rule name="Emphasis">
+		<![CDATA[
+			$before<em>$text</em>$after
+		]]>
+	</rule>
+		
+	<rule name="TableBegin">
+			<![CDATA[
+				<table>
+			]]>
+	</rule>
+
+	<rule name="TableEnd">
+			<![CDATA[
+				</table>
+			]]>
+	</rule>
+	
+	<rule name="WikiLink">
+		<![CDATA[
+			<a href="wiki://$pagename">$pagename</a>
+		]]>
+	</rule>
+
+	<rule name="WebLink">
+		<![CDATA[
+			<a class="web" href="$url">$text</a>
+		]]>	
+	</rule>
+
+	<rule name="RelFileLink">
+		<![CDATA[
+			<a class="relfile" href="{func:dataURL($file)}">$text</a>
+		]]>
+	</rule>
+
+	<rule name="RelFileLinkNoText">
+		<![CDATA[
+			<a class="relfile" href="{func:dataURL($file)}">$file</a>
+		]]>
+	</rule>
+
+	
+	<rule name="FileLink">
+		<![CDATA[
+			<a class="file" href="$url">$text</a>
+		]]>
+	</rule>
+	
+	<rule name="FileLinkWin">
+		<![CDATA[
+			<a class="file" href="$url">$text</a>
+		]]>
+	</rule>
+
+	<rule name="FolderLink">
+		<![CDATA[
+			<a class="folder" href="$url">$text</a>
+		]]>
+	</rule>
+	
+	<rule name="FolderLinkWin">
+		<![CDATA[
+			<a class="folder" href="$url">$text</a>
+		]]>
+	</rule>
+	
+	
+	<rule name="RelIMG">
+		<![CDATA[
+			<img src="{func:dataURL($file)}" />
+		]]>
+	</rule>
+
+	<rule name="RelIMGSole">
+		<![CDATA[
+			<dl class="img">
+				<dt><img src="{func:dataURL($file)}" /></dt>
+				<dd>$caption</dd>
+			</dl>
+		]]>
+	</rule>
+	
+	
+	
+	<rule name="PreBegin">
+			<![CDATA[
+				<div class="pre">
+				 <button onClick="callPSYFunction('toClipboard', this.parentNode.getElementsByTagName('pre')[0].innerText)">In die Zwischenablage</button>
+				<pre>]]>
+	</rule>
+
+	<rule name="PreEnd" blocks="PreBegin">
+			<![CDATA[</pre>
+				</div>
+			]]>
+	</rule>
+	
+	<rule name="Todo">
+		<![CDATA[
+			<span class="todo">
+				<strong>
+					<input type="checkbox" onClick="callPSYFunction('setDone', $linenumber)" />Todo:
+				</strong>
+				<span class="task">$task</span>
+				<span class="due">$due</span>
+			</span>
+			]]>
+	</rule>
+
+	<rule name="Done">
+		<![CDATA[
+			<span class="done">
+				<strong>
+					<input type="checkbox" checked="checked" onClick="callPSYFunction('setTodo', $linenumber)" />Done:
+				</strong>
+				<span class="task">$task</span>
+				<span class="due">$due</span>
+				<span class="date">$done</span>
+			</span>
+			]]>
+	</rule>
+	
+</converter>

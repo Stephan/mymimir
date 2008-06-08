@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<syntax tableCellDelimiter="|">
+
+	<rule name="Headline1">
+		<expression text="^\+([^\+]+)" />
+		<groups>
+			<mapping id="$1"	field="$text" />
+		</groups>
+		<creation text="+$text\r" />
+	</rule>
+
+	<rule name="Headline2">
+		<expression text="^\+\+([^\+]+)" />
+		<groups>
+			<mapping id="$1"	field="$text" />
+		</groups>
+		<creation text="++$text" />
+	</rule>
+
+	<rule name="Headline3">
+		<expression text="^\+\+\+([^\+]+)" />
+		<groups>
+			<mapping id="$1"	field="$text" />
+		</groups>
+		<creation text="+++$text\r" />
+	</rule>
+
+	<rule name="Headline4">
+		<expression text="^\+\+\+\+([^\+]+)" />
+		<groups>
+			<mapping id="$1"	field="$text" />
+		</groups>
+		<creation text="++++$text\r" />
+	</rule>
+	
+	<rule name="HRule">
+		<expression text="\-{4}" />
+	</rule>
+
+	<rule name="Strong">
+		<expression text="\*([^\*]+)\*" />
+		<groups>
+			<mapping id="$1"	field="$text" />
+		</groups>
+	</rule>
+	
+	<rule name="Emphasis">
+		<expression text="(\s|\r|\n|$|^)_(.*)_(\s|\r|\n|$|^)" />
+		<groups>
+			<mapping id="$1"	field="$before" />
+			<mapping id="$2"	field="$text" />
+			<mapping id="$3"	field="$after" />
+		</groups>		
+	</rule>
+	
+	
+	<rule name="PreBegin" type="blockBegin" endBlock="PreEnd" elements="PreEnd">
+		<expression>
+			<![CDATA[
+					^<<pre
+				]]>		
+		</expression>
+	</rule>
+
+	<rule name="PreEnd" type="blockEnd">
+		<expression>
+			<![CDATA[
+					^>>
+				]]>		
+		</expression>
+	</rule>
+
+
+
+	<rule name="TableBegin">
+		<expression>
+			<![CDATA[
+					^<<\|
+				]]>		
+		</expression>
+	</rule>
+	
+	<rule name="TableEnd">
+		<expression>
+			<![CDATA[
+					^>>
+				]]>		
+		</expression>
+		<creation><![CDATA[>>]]></creation>		
+		
+	</rule>
+
+	<rule name="WikiLink">
+		<expression>
+			<![CDATA[
+				\[([^\[\]]+)\]
+			]]>		
+		</expression>
+		<groups>
+			<mapping id="$1"	field="$pagename" />
+		</groups>
+		<creation text="[$pagename]" />
+	</rule>
+
+	<rule name="Function">
+		<expression text="\{([^\{\}\(\)\r\n]+)(\(([^\(\)\r\n]+)\))?\}" />
+		<groups>
+			<mapping id="$1"	field="$functionname" />
+			<mapping id="$3"	field="$parameter" />
+		</groups>
+	</rule>
+
+
+	<rule name="WebLink">
+		<expression text="(http:\/\/[^:\/]+(:\d+)?(\/[^:]*)?):([^:\/]+):" />
+		<groups>
+			<mapping id="$1"	field="$url" />
+			<mapping id="$4"	field="$text" />
+		</groups>
+		<creation text="$url:$text:" />
+	</rule>
+
+
+	<rule name="RelFileLink">
+		<expression text="relfile:\/\/+([^\/:]+[^:]+[^:\/]+):([^\/:]+):" />
+		<groups>
+			<mapping id="$1"	field="$file" />
+			<mapping id="$2"	field="$text" />
+		</groups>
+		<creation text="relfile://$file:$text:" />
+	</rule>
+
+	<rule name="RelFileLinkNoText">
+		<expression text="relfile:\/\/+([^\/:\s]+[^:\s]+[^:\/\s]+)(::)?" />
+		<groups>
+			<mapping id="$1"	field="$file" />
+		</groups>
+		<creation text="relfile://$file:" />
+	</rule>
+
+	
+	<rule name="FileLink">
+		<expression text="(file:\/\/+[^\/:]+[^:]+[^:\/]+):([^\/:]+):" />
+		<groups>
+			<mapping id="$1"	field="$url" />
+			<mapping id="$2"	field="$text" />
+		</groups>
+		<creation text="$url:$text:" />
+	</rule>	
+	
+	<rule name="FileLinkWin">
+		<expression text="(file:\/\/+[^\/:]+:[^:]+[^:\/]+):([^\/:]+):" />
+		<groups>
+			<mapping id="$1"	field="$url" />
+			<mapping id="$2"	field="$text" />
+		</groups>
+		<creation text="$url:$text:" />
+	</rule>	
+
+	<rule name="FolderLink">
+		<expression text="(file:\/\/+[^\/:]+[^:]+[^:\/]+)/:([^\/:]+):" />
+		<groups>
+			<mapping id="$1"	field="$url" />
+			<mapping id="$2"	field="$text" />
+		</groups>
+		<creation text="$url:$text:" />
+	</rule>	
+	
+	<rule name="FolderLinkWin">
+		<expression text="(file:\/\/+[^\/:]+:[^:]+[^:\/]+)/:([^\/:]+):" />
+		<groups>
+			<mapping id="$1"	field="$url" />
+			<mapping id="$2"	field="$text" />
+		</groups>
+		<creation text="$url:$text:" />
+	</rule>	
+
+	
+
+	<rule name="RelIMGSole">
+		<expression text="^\s*img:\/\/+([^\/:]+[^:]+[^:\/]+):([^\/:]*):\s*$" />
+		<groups>
+			<mapping id="$1"	field="$file" />
+			<mapping id="$2"	field="$caption" />
+		</groups>
+		<creation text="img://$file:$caption:" />
+	</rule>
+	
+	<rule name="RelIMG">
+		<expression text="img:\/\/+([^\/\s]+[^:\s]+[^:\/\s]+)" />
+		<groups>
+			<mapping id="$1"	field="$file" />
+		</groups>
+		<creation text="img://$file" />
+	</rule>
+	
+	<rule name="Todo">
+		<expression text="todo:([^:\r]+)(:(\d{8})?)?" />
+		<groups>
+			<mapping id="$1"	field="$task" />
+			<mapping id="$3"	field="$due" />
+		</groups>
+		<creation text="todo:$task:$due" />
+	</rule>
+	
+	<rule name="Done">
+		<expression text="done:([^:\r]+)(:(\d{8})?)?(:(\d{8})?)?" />
+		<groups>
+			<mapping id="$1"	field="$task" />
+			<mapping id="$3"	field="$due" />
+			<mapping id="$5"	field="$done" />
+		</groups>	
+		<creation text="done:$task:$due:$done" />
+	</rule>
+</syntax>
